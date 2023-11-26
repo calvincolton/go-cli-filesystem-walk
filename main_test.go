@@ -70,7 +70,7 @@ func TestRun(t *testing.T) {
 	}
 }
 
-func createTempDir(t *testing.T, files map[string]int) (dirname string, cleanup func()) {
+func createTempDir(t *testing.T, files map[string]int) (dirname string) {
 	t.Helper()
 
 	tempDir, err := os.MkdirTemp("", "walktest")
@@ -88,7 +88,11 @@ func createTempDir(t *testing.T, files map[string]int) (dirname string, cleanup 
 		}
 	}
 
-	return tempDir, func() { os.RemoveAll(tempDir) }
+	t.Cleanup(func() {
+		os.RemoveAll(tempDir)
+	})
+
+	return tempDir
 }
 
 func TestRunDeleteExtension(t *testing.T) {
@@ -130,11 +134,10 @@ func TestRunDeleteExtension(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var buffer bytes.Buffer
 
-			tempDir, cleanup := createTempDir(t, map[string]int{
+			tempDir := createTempDir(t, map[string]int{
 				tc.cfg.ext:     tc.nDelete,
 				tc.extNoDelete: tc.nNoDelete,
 			})
-			defer cleanup()
 
 			if err := run(tempDir, &buffer, tc.cfg); err != nil {
 				t.Fatal(err)
