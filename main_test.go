@@ -106,7 +106,7 @@ func TestRunDeleteExtension(t *testing.T) {
 	}{
 		{
 			name:        "DeleteExtensionNoMatch",
-			cfg:         config{ext: ".log", delete: true},
+			cfg:         config{ext: ".log", del: true},
 			extNoDelete: ".gz",
 			nDelete:     0,
 			nNoDelete:   10,
@@ -114,7 +114,7 @@ func TestRunDeleteExtension(t *testing.T) {
 		},
 		{
 			name:        "DeleteExtensionMatch",
-			cfg:         config{ext: ".log", delete: true},
+			cfg:         config{ext: ".log", del: true},
 			extNoDelete: "",
 			nDelete:     10,
 			nNoDelete:   0,
@@ -122,7 +122,7 @@ func TestRunDeleteExtension(t *testing.T) {
 		},
 		{
 			name:        "DeleteExtensionMixed",
-			cfg:         config{ext: ".log", delete: true},
+			cfg:         config{ext: ".log", del: true},
 			extNoDelete: ".gz",
 			nDelete:     5,
 			nNoDelete:   5,
@@ -132,12 +132,16 @@ func TestRunDeleteExtension(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var buffer bytes.Buffer
+			var (
+				buffer    bytes.Buffer
+				logBuffer bytes.Buffer
+			)
 
 			tempDir := createTempDir(t, map[string]int{
 				tc.cfg.ext:     tc.nDelete,
 				tc.extNoDelete: tc.nNoDelete,
 			})
+			tc.cfg.wLog = &logBuffer
 
 			if err := run(tempDir, &buffer, tc.cfg); err != nil {
 				t.Fatal(err)
@@ -156,6 +160,12 @@ func TestRunDeleteExtension(t *testing.T) {
 
 			if len(filesLeft) != tc.nNoDelete {
 				t.Errorf("Expected %d files let, got %d instead\n", tc.nNoDelete, len(filesLeft))
+			}
+
+			expLogLines := tc.nDelete + 1
+			lines := bytes.Split(logBuffer.Bytes(), []byte("\n"))
+			if len(lines) != expLogLines {
+				t.Errorf("Expected %d log lines, got %d instead\n", expLogLines, len(lines))
 			}
 		})
 	}
